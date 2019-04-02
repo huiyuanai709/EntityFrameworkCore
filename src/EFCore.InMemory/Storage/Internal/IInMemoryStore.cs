@@ -22,7 +22,7 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
         bool EnsureCreated(
-            [NotNull] StateManagerDependencies stateManagerDependencies,
+            [NotNull] IModelDataTrackerFactory modelDataTrackerFactory,
             [NotNull] IDiagnosticsLogger<DbLoggerCategory.Update> updateLogger);
 
         /// <summary>

@@ -8,11 +8,9 @@ using System.Globalization;
 using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.InMemory.Internal;
 using Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.EntityFrameworkCore.Utilities;
 
@@ -24,7 +22,8 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
     /// </summary>
     public class InMemoryTable<TKey> : IInMemoryTable
     {
-        private readonly IPrincipalKeyValueFactory<TKey> _keyValueFactory;
+        // WARNING: The in-memory provider is using EF internal code here. This should not be copied by other providers. See #15096
+        private readonly ChangeTracking.Internal.IPrincipalKeyValueFactory<TKey> _keyValueFactory;
         private readonly bool _sensitiveLoggingEnabled;
         private readonly Dictionary<TKey, object[]> _rows;
 
@@ -34,7 +33,10 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public InMemoryTable([NotNull] IPrincipalKeyValueFactory<TKey> keyValueFactory, bool sensitiveLoggingEnabled)
+        public InMemoryTable(
+            // WARNING: The in-memory provider is using EF internal code here. This should not be copied by other providers. See #15096
+            [NotNull] ChangeTracking.Internal.IPrincipalKeyValueFactory<TKey> keyValueFactory,
+            bool sensitiveLoggingEnabled)
         {
             _keyValueFactory = keyValueFactory;
             _sensitiveLoggingEnabled = sensitiveLoggingEnabled;
@@ -52,7 +54,8 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
                 _integerGenerators = new Dictionary<int, IInMemoryIntegerValueGenerator>();
             }
 
-            var propertyIndex = property.GetIndex();
+            // WARNING: The in-memory provider is using EF internal code here. This should not be copied by other providers. See #15096
+            var propertyIndex = EntityFrameworkCore.Metadata.Internal.PropertyBaseExtensions.GetIndex(property);
             if (!_integerGenerators.TryGetValue(propertyIndex, out var generator))
             {
                 generator = new InMemoryIntegerValueGenerator<TProperty>(propertyIndex);
@@ -198,8 +201,9 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
             }
         }
 
+        // WARNING: The in-memory provider is using EF internal code here. This should not be copied by other providers. See #15096
         private TKey CreateKey(IUpdateEntry entry)
-            => _keyValueFactory.CreateFromCurrentValues((InternalEntityEntry)entry);
+            => _keyValueFactory.CreateFromCurrentValues((ChangeTracking.Internal.InternalEntityEntry)entry);
 
         private static object SnapshotValue(IProperty property, ValueComparer comparer, IUpdateEntry entry)
             => SnapshotValue(comparer, entry.GetCurrentValue(property));

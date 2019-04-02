@@ -36,7 +36,6 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
         private readonly IComparer<ModificationCommand> _modificationCommandComparer;
         private readonly IKeyValueIndexFactorySource _keyValueIndexFactorySource;
         private readonly int _minBatchSize;
-        private IStateManager _stateManager;
         private readonly bool _sensitiveLoggingEnabled;
 
         private IReadOnlyDictionary<(string Schema, string Name), SharedTableEntryMapFactory<ModificationCommand>> _sharedTableEntryMapFactories;
@@ -63,16 +62,16 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
 
         private CommandBatchPreparerDependencies Dependencies { get; }
 
-        private IStateManager StateManager => _stateManager ?? (_stateManager = Dependencies.StateManager());
-
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual IEnumerable<ModificationCommandBatch> BatchCommands(IList<IUpdateEntry> entries)
+        public virtual IEnumerable<ModificationCommandBatch> BatchCommands(
+            IList<IUpdateEntry> entries,
+            IModelDataTracker modelData)
         {
             var parameterNameGenerator = _parameterNameGeneratorFactory.Create();
-            var commands = CreateModificationCommands(entries, parameterNameGenerator.GenerateNext);
+            var commands = CreateModificationCommands(entries, modelData, parameterNameGenerator.GenerateNext);
             var sortedCommandSets = TopologicalSort(commands);
 
             // TODO: Enable batching of dependent commands by passing through the dependency graph
@@ -149,13 +148,14 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
         /// </summary>
         protected virtual IEnumerable<ModificationCommand> CreateModificationCommands(
             [NotNull] IList<IUpdateEntry> entries,
+            [NotNull] IModelDataTracker modelData,
             [NotNull] Func<string> generateParameterName)
         {
             var commands = new List<ModificationCommand>();
             if (_sharedTableEntryMapFactories == null)
             {
                 _sharedTableEntryMapFactories = SharedTableEntryMap<ModificationCommand>
-                    .CreateSharedTableEntryMapFactories(entries[0].EntityType.Model, StateManager);
+                    .CreateSharedTableEntryMapFactories(modelData.Model, modelData);
             }
 
             Dictionary<(string Schema, string Name), SharedTableEntryMap<ModificationCommand>> sharedTablesCommandsMap =
@@ -300,7 +300,7 @@ namespace Microsoft.EntityFrameworkCore.Update.Internal
                             continue;
                         }
 
-                        entry.SetEntityState(EntityState.Modified, modifyProperties: false);
+                        entry.EntityState = EntityState.Modified;
 
                         command.AddEntry(entry);
                         entries.Add(entry);

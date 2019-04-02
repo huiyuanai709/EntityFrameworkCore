@@ -154,6 +154,12 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
+        public virtual IModel Model => _model;
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
         public virtual IEntityFinderFactory EntityFinderFactory { get; }
 
         /// <summary>
@@ -663,7 +669,7 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual InternalEntityEntry GetPrincipal(
+        public virtual InternalEntityEntry FindPrincipal(
             InternalEntityEntry dependentEntry,
             IForeignKey foreignKey)
             => FilterIncompatiblePrincipal(
@@ -675,7 +681,7 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual InternalEntityEntry GetPrincipalUsingPreStoreGeneratedValues(
+        public virtual InternalEntityEntry FindPrincipalUsingPreStoreGeneratedValues(
             InternalEntityEntry dependentEntry, IForeignKey foreignKey)
             => FilterIncompatiblePrincipal(
                 foreignKey,
@@ -686,7 +692,7 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual InternalEntityEntry GetPrincipalUsingRelationshipSnapshot(
+        public virtual InternalEntityEntry FindPrincipalUsingRelationshipSnapshot(
             InternalEntityEntry dependentEntry, IForeignKey foreignKey)
             => FilterIncompatiblePrincipal(
                 foreignKey,

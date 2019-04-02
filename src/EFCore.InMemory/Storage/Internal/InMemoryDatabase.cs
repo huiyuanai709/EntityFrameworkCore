@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
@@ -34,6 +33,7 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
     public class InMemoryDatabase : Database, IInMemoryDatabase
     {
         private readonly IInMemoryStore _store;
+        private readonly IModelDataTrackerFactory _modelDataTrackerFactory;
         private readonly IDiagnosticsLogger<DbLoggerCategory.Update> _updateLogger;
 
         /// <summary>
@@ -44,14 +44,17 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
             [NotNull] DatabaseDependencies dependencies,
             [NotNull] IInMemoryStoreCache storeCache,
             [NotNull] IDbContextOptions options,
+            [NotNull] IModelDataTrackerFactory modelDataTrackerFactory,
             [NotNull] IDiagnosticsLogger<DbLoggerCategory.Update> updateLogger)
             : base(dependencies)
         {
             Check.NotNull(storeCache, nameof(storeCache));
             Check.NotNull(options, nameof(options));
+            Check.NotNull(modelDataTrackerFactory, nameof(modelDataTrackerFactory));
             Check.NotNull(updateLogger, nameof(updateLogger));
 
             _store = storeCache.GetStore(options);
+            _modelDataTrackerFactory = modelDataTrackerFactory;
             _updateLogger = updateLogger;
         }
 
@@ -81,8 +84,8 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual bool EnsureDatabaseCreated(StateManagerDependencies stateManagerDependencies)
-            => _store.EnsureCreated(Check.NotNull(stateManagerDependencies, nameof(stateManagerDependencies)), _updateLogger);
+        public virtual bool EnsureDatabaseCreated()
+            => _store.EnsureCreated(_modelDataTrackerFactory, _updateLogger);
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used

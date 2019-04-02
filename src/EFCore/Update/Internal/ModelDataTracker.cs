@@ -1,87 +1,90 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System.Threading;
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Utilities;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
+using Microsoft.EntityFrameworkCore.Metadata;
 
-namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
+namespace Microsoft.EntityFrameworkCore.Update.Internal
 {
     /// <summary>
-    ///     <para>
-    ///         This API supports the Entity Framework Core infrastructure and is not intended to be used
-    ///         directly from your code. This API may change or be removed in future releases.
-    ///     </para>
-    ///     <para>
-    ///         The service lifetime is <see cref="ServiceLifetime.Scoped"/>. This means that each
-    ///         <see cref="DbContext"/> instance will use its own instance of this service.
-    ///         The implementation may depend on other services registered with any lifetime.
-    ///         The implementation does not need to be thread-safe.
-    ///     </para>
+    ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+    ///     directly from your code. This API may change or be removed in future releases.
     /// </summary>
-    public class InMemoryDatabaseCreator : IDatabaseCreator
+    public class ModelDataTracker : IModelDataTracker
     {
-        private readonly IDatabase _database;
+        private readonly IStateManager _stateManager;
+        private readonly IChangeDetector _changeDetector;
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public InMemoryDatabaseCreator([NotNull] IDatabase database)
+        public ModelDataTracker(
+            [NotNull] IStateManager stateManager,
+            [NotNull] IChangeDetector changeDetector)
         {
-            Check.NotNull(database, nameof(database));
-
-            _database = database;
+            _stateManager = stateManager;
+            _changeDetector = changeDetector;
         }
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        protected virtual IInMemoryDatabase Database => (IInMemoryDatabase)_database;
+        public virtual IUpdateEntry FindPrincipal(IUpdateEntry dependentEntry, IForeignKey foreignKey)
+            => _stateManager.FindPrincipal((InternalEntityEntry)dependentEntry, foreignKey);
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual bool EnsureDeleted()
-            => Database.Store.Clear();
+        public virtual IEnumerable<IUpdateEntry> GetDependents(IUpdateEntry principalEntry, IForeignKey foreignKey)
+            => _stateManager.GetDependents((InternalEntityEntry)principalEntry, foreignKey);
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual Task<bool> EnsureDeletedAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(EnsureDeleted());
+        public virtual IUpdateEntry TryGetEntry(IKey key, object[] keyValues)
+            => _stateManager.TryGetEntry(key, keyValues);
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual bool EnsureCreated() => Database.EnsureDatabaseCreated();
+        public virtual IEnumerable<IUpdateEntry> Entries
+            => _stateManager.Entries;
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual Task<bool> EnsureCreatedAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(Database.EnsureDatabaseCreated());
+        public virtual void DetectChanges()
+            => _changeDetector.DetectChanges(_stateManager);
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual bool CanConnect()
-            => true;
+        public virtual IList<IUpdateEntry> GetEntriesToSave()
+            => _stateManager.GetEntriesToSave();
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
-        public virtual Task<bool> CanConnectAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(true);
+        public virtual IUpdateEntry CreateEntry(
+            IDictionary<string, object> values,
+            IEntityType entityType)
+            => _stateManager.CreateEntry(values, entityType);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        public virtual IModel Model
+            => _stateManager.Model;
     }
 }

@@ -3,6 +3,7 @@
 
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,17 +48,27 @@ namespace Microsoft.EntityFrameworkCore.Storage
         ///     </para>
         /// </summary>
         /// <param name="queryCompilationContextFactory"> Factory for compilation contexts to process LINQ queries. </param>
-        public DatabaseDependencies([NotNull] IQueryCompilationContextFactory queryCompilationContextFactory)
+        /// <param name="modelDataTrackerFactory"> Factory for creating model data tracker. </param>
+        public DatabaseDependencies(
+            [NotNull] IQueryCompilationContextFactory queryCompilationContextFactory,
+            [NotNull] IModelDataTrackerFactory modelDataTrackerFactory)
         {
             Check.NotNull(queryCompilationContextFactory, nameof(queryCompilationContextFactory));
+            Check.NotNull(modelDataTrackerFactory, nameof(modelDataTrackerFactory));
 
             QueryCompilationContextFactory = queryCompilationContextFactory;
+            ModelDataTrackerFactory = modelDataTrackerFactory;
         }
 
         /// <summary>
         ///     Factory for compilation contexts to process LINQ queries.
         /// </summary>
         public IQueryCompilationContextFactory QueryCompilationContextFactory { get; }
+
+        /// <summary>
+        ///     Factory for creating model data tracker.
+        /// </summary>
+        public IModelDataTrackerFactory ModelDataTrackerFactory { get; }
 
         /// <summary>
         ///     Clones this dependency parameter object with one service replaced.
@@ -67,6 +78,16 @@ namespace Microsoft.EntityFrameworkCore.Storage
         /// </param>
         /// <returns> A new parameter object with the given service replaced. </returns>
         public DatabaseDependencies With([NotNull] IQueryCompilationContextFactory queryCompilationContextFactory)
-            => new DatabaseDependencies(Check.NotNull(queryCompilationContextFactory, nameof(queryCompilationContextFactory)));
+            => new DatabaseDependencies(queryCompilationContextFactory, ModelDataTrackerFactory);
+
+        /// <summary>
+        ///     Clones this dependency parameter object with one service replaced.
+        /// </summary>
+        /// <param name="modelDataTrackerFactory">
+        ///     A replacement for the current dependency of this type.
+        /// </param>
+        /// <returns> A new parameter object with the given service replaced. </returns>
+        public DatabaseDependencies With([NotNull] IModelDataTrackerFactory modelDataTrackerFactory)
+            => new DatabaseDependencies(QueryCompilationContextFactory, modelDataTrackerFactory);
     }
 }

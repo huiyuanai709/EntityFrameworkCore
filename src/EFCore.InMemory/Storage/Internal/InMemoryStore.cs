@@ -5,14 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using JetBrains.Annotations;
-using Microsoft.EntityFrameworkCore.ChangeTracking;
-using Microsoft.EntityFrameworkCore.ChangeTracking.Internal;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.InMemory.Internal;
 using Microsoft.EntityFrameworkCore.InMemory.ValueGeneration.Internal;
-using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Update;
 
 namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
@@ -72,7 +68,7 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
         ///     directly from your code. This API may change or be removed in future releases.
         /// </summary>
         public virtual bool EnsureCreated(
-            StateManagerDependencies stateManagerDependencies,
+            IModelDataTrackerFactory modelDataTrackerFactory,
             IDiagnosticsLogger<DbLoggerCategory.Update> updateLogger)
         {
             lock (_lock)
@@ -83,14 +79,14 @@ namespace Microsoft.EntityFrameworkCore.InMemory.Storage.Internal
                     // ReSharper disable once AssignmentIsFullyDiscarded
                     _tables = CreateTables();
 
-                    var stateManager = new StateManager(stateManagerDependencies);
+                    var modelDataTracker = modelDataTrackerFactory.Create();
                     var entries = new List<IUpdateEntry>();
-                    foreach (var entityType in stateManagerDependencies.Model.GetEntityTypes())
+                    foreach (var entityType in modelDataTracker.Model.GetEntityTypes())
                     {
                         foreach (var targetSeed in entityType.GetData())
                         {
-                            var entry = stateManager.CreateEntry(targetSeed, entityType);
-                            entry.SetEntityState(EntityState.Added);
+                            var entry = modelDataTracker.CreateEntry(targetSeed, entityType);
+                            entry.EntityState = EntityState.Added;
                             entries.Add(entry);
                         }
                     }
