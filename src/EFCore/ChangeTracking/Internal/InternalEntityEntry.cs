@@ -975,7 +975,8 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
                     && valueType == CurrentValueType.Normal
                     && (!asProperty.ClrType.IsNullableType()
                         || asProperty.GetContainingForeignKeys().Any(
-                            fk => (fk.DeleteBehavior == DeleteBehavior.Cascade)
+                            fk => (fk.DeleteBehavior == DeleteBehavior.Cascade
+                                   || fk.DeleteBehavior == DeleteBehavior.ClientCascade)
                                   && fk.DeclaringEntityType.IsAssignableFrom(EntityType))))
                 {
                     if (value == null)
@@ -1177,7 +1178,8 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
                     if (_stateData.IsPropertyFlagged(property.GetIndex(), PropertyFlag.Null))
                     {
                         if (properties.Any(p => p.IsNullable)
-                            && foreignKey.DeleteBehavior != DeleteBehavior.Cascade)
+                            && foreignKey.DeleteBehavior != DeleteBehavior.Cascade
+                            && foreignKey.DeleteBehavior != DeleteBehavior.ClientCascade)
                         {
                             foreach (var toNull in properties)
                             {
@@ -1202,7 +1204,8 @@ namespace Microsoft.EntityFrameworkCore.ChangeTracking.Internal
                 }
             }
 
-            var cascadeFk = fks.FirstOrDefault(fk => fk.DeleteBehavior == DeleteBehavior.Cascade);
+            var cascadeFk = fks.FirstOrDefault(fk => fk.DeleteBehavior == DeleteBehavior.Cascade
+                                                     || fk.DeleteBehavior == DeleteBehavior.ClientCascade);
             if (cascadeFk != null
                 && (force
                     || (!isCascadeDelete
